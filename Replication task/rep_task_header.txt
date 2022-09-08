@@ -1,0 +1,68 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform:  'AWS::Serverless-2016-10-31'
+
+Description: Integration of M&Q sources in EDB to create Replication Tasks for <<system_name>> 
+
+Parameters:
+    pEnv:
+        Description: Environment
+        Type: String
+        Default: dev
+        ConstraintDescription: must specify dev, qa or prod.
+        AllowedValues:
+        - dev
+        - qa
+        - prod
+    AppName:
+        Description: "Enter AppName"
+        Type: String    
+    Hipaa:
+        Description: "Enter Hipaa"
+        Type: String
+    SourceGitRepo: 
+        Description: "Enter Source Git Repository Name"
+        Type: String
+    ApproverGroup: 
+        Description: "Enter the Approver Group"
+        Type: String
+    ApplicationCi:
+        Description: "Enter the Application Ci parameter"
+        Type: String
+    CostCenterApprover :
+        Description: "Enter CostCenterApprover"
+        Type: String
+    PrimaryItContact :
+        Description: "Enter PrimaryItContact"
+        Type: String
+    SystemOwner :
+        Description: "Enter SystemOwner"
+        Type: String
+    SystemCustodian :
+        Description: "Enter SystemCustodian"
+        Type: String
+    CostCenter :
+        Description: "EnterCostCenter"
+        Type: String
+    Level1BusinessArea :
+        Description: "Enter Level1BusinessArea"
+        Type: String
+    DataClassification :
+        Description: "Enter DataClassification"
+        Type: String
+    DeployEnvironment :
+        Description: "Enter DeployEnvironment"
+        Type: String
+
+
+
+Conditions:
+  deployDev:
+    !Equals [!Ref pEnv, dev]
+  deployQA:
+    !Or [!Equals [!Ref pEnv, dev], !Equals [!Ref pEnv, qa]]
+  deployProd:
+    !Or [!Equals [!Ref pEnv, dev], !Equals [!Ref pEnv, qa], !Equals [!Ref pEnv, prod]]
+
+
+
+Resources:

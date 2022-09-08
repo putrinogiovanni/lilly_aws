@@ -1,0 +1,849 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform:  'AWS::Serverless-2016-10-31'
+
+
+Description: Integration of M&Q sources in EDB to create All Shared Resources needed for GIPC integration
+
+Parameters:
+    pEnv:
+        Description: Environment
+        Type: String
+        Default: dev
+        ConstraintDescription: must specify dev, qa or prod.
+        AllowedValues:
+        - dev
+        - qa
+        - prod
+    AppName:
+        Description: "Enter AppName"
+        Type: String
+    Hipaa:
+        Description: "Enter Hipaa"
+        Type: String
+    CostCenterApprover :
+        Description: "Enter CostCenterApprover"
+        Type: String
+    PrimaryItContact :
+        Description: "Enter PrimaryItContact"
+        Type: String
+    SystemOwner :
+        Description: "Enter SystemOwner"
+        Type: String
+    SystemCustodian :
+        Description: "Enter SystemCustodian"
+        Type: String
+    CostCenter :
+        Description: "EnterCostCenter"
+        Type: String
+    Level1BusinessArea :
+        Description: "Enter Level1BusinessArea"
+        Type: String
+    DataClassification :
+        Description: "Enter DataClassification"
+        Type: String
+    DeployEnvironment :
+        Description: "Enter DeployEnvironment"
+        Type: String
+    SourceGitRepo:
+        Description: "Enter Source Git Repository Name"
+        Type: String
+    ApproverGroup:
+        Description: "Enter the Approver Group"
+        Type: String
+    ApplicationCi:
+        Description: "Enter the Application Ci parameter"
+        Type: String
+    IamRoleDmsRoleArn:
+        Description: Iam Role ARN for the DMS Service Role used by CAVEAU project
+        Type: String
+    KMSencryptionSecretManagerKeyArn:
+        Description: "key to encrypt the SecretManager for CAVEAU MQ project"
+        Type: String
+    LambdaMoveDMSFileToRawZoneFormattedName:
+        Description: Lambda name of function to move data from Landing to Raw zone
+        Type: String
+    LambdaMoveDMSFileToRawZoneFormattedArn:
+        Description: Lambda ARN of function to move data from Landing to Raw zone
+        Type: String
+
+
+Conditions:
+  deployDev:
+    !Equals [!Ref pEnv, dev]
+  deployQA:
+    !Or [!Equals [!Ref pEnv, dev], !Equals [!Ref pEnv, qa]]
+  deployProd:
+    !Or [!Equals [!Ref pEnv, dev], !Equals [!Ref pEnv, qa], !Equals [!Ref pEnv, prod]]
+
+
+Mappings:
+  system:
+    gipcsesto:
+      "secret": "edb-mq-dia-secret-gipcsesto"
+      "dmsTargetEndpoint": "edb-mq-dia-gipc-sesto-target"
+      "dmsTargetEndpointView": "edb-mq-dia-gipc-sesto-target-view"
+      "dmsSourceEndpoint": "edb-mq-dia-gipc-sesto-source"
+    gipcfegersheim:
+      "secret": "edb-mq-dia-secret-gipcfegersheim"
+      "dmsTargetEndpoint": "edb-mq-dia-gipc-fegersheim-target"
+      "dmsTargetEndpointView": "edb-mq-dia-gipc-fegersheim-target-view"
+      "dmsSourceEndpoint": "edb-mq-dia-gipc-fegersheim-source"
+    gipcindyipm:
+      "secret": "edb-mq-dia-secret-gipcindyipm"
+      "dmsTargetEndpoint": "edb-mq-dia-gipc-indyipm-target"
+      "dmsTargetEndpointView": "edb-mq-dia-gipc-indyipm-target-view"
+      "dmsSourceEndpoint": "edb-mq-dia-gipc-indyipm-source"
+    gipcsuzhou:
+      "secret": "edb-mq-dia-secret-gipcsuzhou"
+      "dmsTargetEndpoint": "edb-mq-dia-gipc-suzhou-target"
+      "dmsTargetEndpointView": "edb-mq-dia-gipc-suzhou-target-view"
+      "dmsSourceEndpoint": "edb-mq-dia-gipc-suzhou-source"
+#############################SECRET MANAGER GROUPS#################################################
+    rEdbMqDiaSecretManagerDmsSourceGIPCSesto:
+        Type: AWS::SecretsManager::Secret
+        Condition: deployDev
+        Properties:
+            Name: !FindInMap [system, gipcsesto, secret]
+            Description: Secret for GIPC Sesto source Endpoint of DMS for the CAVEAU project
+            KmsKeyId: !Ref KMSencryptionSecretManagerKeyArn
+            SecretString:
+                "{\"username\":\"userTest\",\"password\":\"pwdTest\",\"engine\":\"oracle\",\"host\":\"hostTest\",\"port\":1,\"dbname\":\"dbTest\",\"certificate\":\"certTest\"}"
+
+    rEdbMqDiaSecretManagerDmsSourceGIPCFegersheim:
+        Type: AWS::SecretsManager::Secret
+        Condition: deployDev
+        Properties:
+            Name: !FindInMap [system, gipcfegersheim, secret]
+            Description: Secret for GIPC Fegersheim source Endpoint of DMS for the CAVEAU project
+            KmsKeyId: !Ref KMSencryptionSecretManagerKeyArn
+            SecretString:
+                "{\"username\":\"userTest\",\"password\":\"pwdTest\",\"engine\":\"oracle\",\"host\":\"hostTest\",\"port\":1,\"dbname\":\"dbTest\",\"certificate\":\"certTest\"}"
+
+    rEdbMqDiaSecretManagerDmsSourceGIPCIndyIpm:
+        Type: AWS::SecretsManager::Secret
+        Condition: deployDev
+        Properties:
+            Name: !FindInMap [system, gipcindyipm, secret]
+            Description: Secret for GIPC IndyIpm source Endpoint of DMS for the CAVEAU project
+            KmsKeyId: !Ref KMSencryptionSecretManagerKeyArn
+            SecretString:
+                "{\"username\":\"userTest\",\"password\":\"pwdTest\",\"engine\":\"oracle\",\"host\":\"hostTest\",\"port\":1,\"dbname\":\"dbTest\",\"certificate\":\"certTest\"}"
+
+    rEdbMqDiaSecretManagerDmsSourceGIPCSuzhou:
+        Type: AWS::SecretsManager::Secret
+        Condition: deployDev
+        Properties:
+            Name: !FindInMap [system, gipcsuzhou, secret]
+            Description: Secret for GIPC Suzhou source Endpoint of DMS for the CAVEAU project
+            KmsKeyId: !Ref KMSencryptionSecretManagerKeyArn
+            SecretString:
+                "{\"username\":\"userTest\",\"password\":\"pwdTest\",\"engine\":\"oracle\",\"host\":\"hostTest\",\"port\":1,\"dbname\":\"dbTest\",\"certificate\":\"certTest\"}"
+
+#############################DMS#################################################
+    rEdbMqDiaDmsTargetEndpointGIPCSesto:
+        DependsOn:
+          - rEdbMqDiaSecretManagerDmsSourceGIPCSesto
+        Type: AWS::DMS::Endpoint
+        Condition: deployDev
+        Properties:
+            EndpointIdentifier: !FindInMap [system, gipcsesto, dmsTargetEndpoint]
+            EndpointType: target
+            EngineName: s3
+            S3Settings:
+                BucketFolder: !Sub
+                  - "global_ipc_book/dms/{{resolve:secretsmanager:${hostname}:SecretString:host}}"
+                  - hostname: !FindInMap [system, gipcsesto, secret]
+                BucketName: !Sub "lly-edp-raw-${AWS::Region}-${pEnv}"
+                ServiceAccessRoleArn: !Ref IamRoleDmsRoleArn
+            ExtraConnectionAttributes: "dataFormat=parquet;timestampColumnName=R_CDC_TMSTMP;DatePartitionEnabled=true;DatePartitionSequence=YYYYMMDD;DatePartitionDelimiter=DASH;parquetTimestampInMillisecond=true;csvNullValue='';cdcMaxBatchInterval=120;maxFileSize=262144"
+            Tags:
+              - Key : "AppName"
+                Value: !Ref AppName
+              - Key : "Hipaa"
+                Value : !Ref Hipaa
+              - Key : "CostCenterApprover"
+                Value : !Ref CostCenterApprover
+              - Key : "PrimaryITContact"
+                Value : !Ref PrimaryItContact
+              - Key : "SystemOwner"
+                Value : !Ref SystemOwner
+              - Key : "SystemCustodian"
+                Value : !Ref SystemCustodian
+              - Key : "CostCenter"
+                Value : !Ref CostCenter
+              - Key : "Level1BusinessArea"
+                Value : !Ref Level1BusinessArea
+              - Key : "DataClassification"
+                Value : !Ref DataClassification
+              - Key : "Environment"
+                Value : !Ref DeployEnvironment
+              - Key : "SourceGitRepo"
+                Value : !Ref SourceGitRepo
+              - Key : "ApproverGroup"
+                Value: !Ref ApproverGroup
+              - Key : "ApplicationCi"
+                Value : !Ref ApplicationCi
+
+    rEdbMqDiaDmsTargetEndpointGIPCSestoView:
+        DependsOn:
+          - rEdbMqDiaSecretManagerDmsSourceGIPCSesto
+        Type: AWS::DMS::Endpoint
+        Condition: deployDev
+        Properties:
+            EndpointIdentifier: !FindInMap [system, gipcsesto , dmsTargetEndpointView]
+            EndpointType: target
+            EngineName: s3
+            S3Settings:
+                BucketFolder: !Sub
+                  - "global_ipc_book/dms/gipc_{{resolve:secretsmanager:${hostname}:SecretString:host}}"
+                  - hostname: !FindInMap [system, gipcsesto, secret]
+                BucketName: !Sub "lly-edp-raw-${AWS::Region}-${pEnv}"
+                ServiceAccessRoleArn: !Ref IamRoleDmsRoleArn
+            ExtraConnectionAttributes: "dataFormat=parquet;timestampColumnName=R_CDC_TMSTMP;parquetTimestampInMillisecond=true;csvNullValue='';maxFileSize=262144"
+            Tags:
+              - Key : "AppName"
+                Value: !Ref AppName
+              - Key : "Hipaa"
+                Value : !Ref Hipaa
+              - Key : "CostCenterApprover"
+                Value : !Ref CostCenterApprover
+              - Key : "PrimaryITContact"
+                Value : !Ref PrimaryItContact
+              - Key : "SystemOwner"
+                Value : !Ref SystemOwner
+              - Key : "SystemCustodian"
+                Value : !Ref SystemCustodian
+              - Key : "CostCenter"
+                Value : !Ref CostCenter
+              - Key : "Level1BusinessArea"
+                Value : !Ref Level1BusinessArea
+              - Key : "DataClassification"
+                Value : !Ref DataClassification
+              - Key : "Environment"
+                Value : !Ref DeployEnvironment
+              - Key : "SourceGitRepo"
+                Value : !Ref SourceGitRepo
+              - Key : "ApproverGroup"
+                Value: !Ref ApproverGroup
+              - Key : "ApplicationCi"
+                Value : !Ref ApplicationCi
+
+    rEdbMqDiaDmsSourceEndpointGIPCSesto:
+        DependsOn:
+          - rEdbMqDiaSecretManagerDmsSourceGIPCSesto
+        Type: "AWS::DMS::Endpoint"
+        Condition: deployDev
+        Properties:
+            EndpointIdentifier: !FindInMap [system, gipcsesto, dmsSourceEndpoint]
+            EndpointType: source
+            EngineName: !Sub
+                - "{{resolve:secretsmanager:${segreto}:SecretString:engine}}"
+                - segreto: !FindInMap [system, gipcsesto, secret]
+            DatabaseName: !Sub
+                - "{{resolve:secretsmanager:${segreto}:SecretString:dbname}}"
+                - segreto: !FindInMap [system, gipcsesto, secret]
+            Password: !Sub
+                - "{{resolve:secretsmanager:${segreto}:SecretString:password}}"
+                - segreto: !FindInMap [system, gipcsesto, secret]
+            Port: !Sub
+                - "{{resolve:secretsmanager:${segreto}:SecretString:port}}"
+                - segreto: !FindInMap [system, gipcsesto, secret]
+            ServerName: !Sub
+                - "{{resolve:secretsmanager:${segreto}:SecretString:host}}"
+                - segreto: !FindInMap [system, gipcsesto, secret]
+            Username: !Sub
+                - "{{resolve:secretsmanager:${segreto}:SecretString:username}}"
+                - segreto: !FindInMap [system, gipcsesto, secret]
+            SslMode: none
+            # CertificateArn: !Sub
+            #    - "{{resolve:secretsmanager:${segreto}:SecretString:certificate}}"
+            #    - segreto: !FindInMap [system, gipcsesto, secret]
+            ExtraConnectionAttributes: "numberDataTypeScale=-1;retryInterval=60;exposeViews=true"
+            Tags:
+              - Key : "AppName"
+                Value: !Ref AppName
+              - Key : "Hipaa"
+                Value : !Ref Hipaa
+              - Key : "CostCenterApprover"
+                Value : !Ref CostCenterApprover
+              - Key : "PrimaryITContact"
+                Value : !Ref PrimaryItContact
+              - Key : "SystemOwner"
+                Value : !Ref SystemOwner
+              - Key : "SystemCustodian"
+                Value : !Ref SystemCustodian
+              - Key : "CostCenter"
+                Value : !Ref CostCenter
+              - Key : "Level1BusinessArea"
+                Value : !Ref Level1BusinessArea
+              - Key : "DataClassification"
+                Value : !Ref DataClassification
+              - Key : "Environment"
+                Value : !Ref DeployEnvironment
+              - Key : "SourceGitRepo"
+                Value : !Ref SourceGitRepo
+              - Key : "ApproverGroup"
+                Value: !Ref ApproverGroup
+              - Key : "ApplicationCi"
+                Value : !Ref ApplicationCi
+
+    rEdbMqDiaDmsTargetEndpointGIPCFegersheim:
+        DependsOn:
+          - rEdbMqDiaSecretManagerDmsSourceGIPCFegersheim
+        Type: AWS::DMS::Endpoint
+        Condition: deployDev
+        Properties:
+            EndpointIdentifier: !FindInMap [system, gipcfegersheim, dmsTargetEndpoint]
+            EndpointType: target
+            EngineName: s3
+            S3Settings:
+                BucketFolder: !Sub
+                  - "global_ipc_book/dms/{{resolve:secretsmanager:${hostname}:SecretString:host}}"
+                  - hostname: !FindInMap [system, gipcfegersheim, secret]
+                BucketName: !Sub "lly-edp-raw-${AWS::Region}-${pEnv}"
+                ServiceAccessRoleArn: !Ref IamRoleDmsRoleArn
+            ExtraConnectionAttributes: "dataFormat=parquet;timestampColumnName=R_CDC_TMSTMP;DatePartitionEnabled=true;DatePartitionSequence=YYYYMMDD;DatePartitionDelimiter=DASH;parquetTimestampInMillisecond=true;csvNullValue='';cdcMaxBatchInterval=120;maxFileSize=262144"
+            Tags:
+              - Key : "AppName"
+                Value: !Ref AppName
+              - Key : "Hipaa"
+                Value : !Ref Hipaa
+              - Key : "CostCenterApprover"
+                Value : !Ref CostCenterApprover
+              - Key : "PrimaryITContact"
+                Value : !Ref PrimaryItContact
+              - Key : "SystemOwner"
+                Value : !Ref SystemOwner
+              - Key : "SystemCustodian"
+                Value : !Ref SystemCustodian
+              - Key : "CostCenter"
+                Value : !Ref CostCenter
+              - Key : "Level1BusinessArea"
+                Value : !Ref Level1BusinessArea
+              - Key : "DataClassification"
+                Value : !Ref DataClassification
+              - Key : "Environment"
+                Value : !Ref DeployEnvironment
+              - Key : "SourceGitRepo"
+                Value : !Ref SourceGitRepo
+              - Key : "ApproverGroup"
+                Value: !Ref ApproverGroup
+              - Key : "ApplicationCi"
+                Value : !Ref ApplicationCi
+
+    rEdbMqDiaDmsTargetEndpointGIPCFegersheimView:
+        DependsOn:
+          - rEdbMqDiaSecretManagerDmsSourceGIPCFegersheim
+        Type: AWS::DMS::Endpoint
+        Condition: deployDev
+        Properties:
+            EndpointIdentifier: !FindInMap [system, gipcfegersheim , dmsTargetEndpointView]
+            EndpointType: target
+            EngineName: s3
+            S3Settings:
+                BucketFolder: !Sub
+                  - "global_ipc_book/dms/gipc_{{resolve:secretsmanager:${hostname}:SecretString:host}}"
+                  - hostname: !FindInMap [system, gipcfegersheim, secret]
+                BucketName: !Sub "lly-edp-raw-${AWS::Region}-${pEnv}"
+                ServiceAccessRoleArn: !Ref IamRoleDmsRoleArn
+            ExtraConnectionAttributes: "dataFormat=parquet;timestampColumnName=R_CDC_TMSTMP;parquetTimestampInMillisecond=true;csvNullValue='';maxFileSize=262144"
+            Tags:
+              - Key : "AppName"
+                Value: !Ref AppName
+              - Key : "Hipaa"
+                Value : !Ref Hipaa
+              - Key : "CostCenterApprover"
+                Value : !Ref CostCenterApprover
+              - Key : "PrimaryITContact"
+                Value : !Ref PrimaryItContact
+              - Key : "SystemOwner"
+                Value : !Ref SystemOwner
+              - Key : "SystemCustodian"
+                Value : !Ref SystemCustodian
+              - Key : "CostCenter"
+                Value : !Ref CostCenter
+              - Key : "Level1BusinessArea"
+                Value : !Ref Level1BusinessArea
+              - Key : "DataClassification"
+                Value : !Ref DataClassification
+              - Key : "Environment"
+                Value : !Ref DeployEnvironment
+              - Key : "SourceGitRepo"
+                Value : !Ref SourceGitRepo
+              - Key : "ApproverGroup"
+                Value: !Ref ApproverGroup
+              - Key : "ApplicationCi"
+                Value : !Ref ApplicationCi
+
+    rEdbMqDiaDmsSourceEndpointGIPCFegersheim:
+        DependsOn:
+          - rEdbMqDiaSecretManagerDmsSourceGIPCFegersheim
+        Type: "AWS::DMS::Endpoint"
+        Condition: deployDev
+        Properties:
+            EndpointIdentifier: !FindInMap [system, gipcfegersheim, dmsSourceEndpoint]
+            EndpointType: source
+            EngineName: !Sub
+                - "{{resolve:secretsmanager:${segreto}:SecretString:engine}}"
+                - segreto: !FindInMap [system, gipcfegersheim, secret]
+            DatabaseName: !Sub
+                - "{{resolve:secretsmanager:${segreto}:SecretString:dbname}}"
+                - segreto: !FindInMap [system, gipcfegersheim, secret]
+            Password: !Sub
+                - "{{resolve:secretsmanager:${segreto}:SecretString:password}}"
+                - segreto: !FindInMap [system, gipcfegersheim, secret]
+            Port: !Sub
+                - "{{resolve:secretsmanager:${segreto}:SecretString:port}}"
+                - segreto: !FindInMap [system, gipcfegersheim, secret]
+            ServerName: !Sub
+                - "{{resolve:secretsmanager:${segreto}:SecretString:host}}"
+                - segreto: !FindInMap [system, gipcfegersheim, secret]
+            Username: !Sub
+                - "{{resolve:secretsmanager:${segreto}:SecretString:username}}"
+                - segreto: !FindInMap [system, gipcfegersheim, secret]
+            SslMode: none
+            # CertificateArn: !Sub
+            #    - "{{resolve:secretsmanager:${segreto}:SecretString:certificate}}"
+            #    - segreto: !FindInMap [system, gipcfegersheim, secret]
+            ExtraConnectionAttributes: "numberDataTypeScale=-1;retryInterval=60;exposeViews=true"
+            Tags:
+              - Key : "AppName"
+                Value: !Ref AppName
+              - Key : "Hipaa"
+                Value : !Ref Hipaa
+              - Key : "CostCenterApprover"
+                Value : !Ref CostCenterApprover
+              - Key : "PrimaryITContact"
+                Value : !Ref PrimaryItContact
+              - Key : "SystemOwner"
+                Value : !Ref SystemOwner
+              - Key : "SystemCustodian"
+                Value : !Ref SystemCustodian
+              - Key : "CostCenter"
+                Value : !Ref CostCenter
+              - Key : "Level1BusinessArea"
+                Value : !Ref Level1BusinessArea
+              - Key : "DataClassification"
+                Value : !Ref DataClassification
+              - Key : "Environment"
+                Value : !Ref DeployEnvironment
+              - Key : "SourceGitRepo"
+                Value : !Ref SourceGitRepo
+              - Key : "ApproverGroup"
+                Value: !Ref ApproverGroup
+              - Key : "ApplicationCi"
+                Value : !Ref ApplicationCi
+
+    rEdbMqDiaDmsTargetEndpointGIPCIndyIpm:
+        DependsOn:
+          - rEdbMqDiaSecretManagerDmsSourceGIPCIndyIpm
+        Type: AWS::DMS::Endpoint
+        Condition: deployDev
+        Properties:
+            EndpointIdentifier: !FindInMap [system, gipcindyipm, dmsTargetEndpoint]
+            EndpointType: target
+            EngineName: s3
+            S3Settings:
+                BucketFolder: !Sub
+                  - "global_ipc_book/dms/{{resolve:secretsmanager:${hostname}:SecretString:host}}"
+                  - hostname: !FindInMap [system, gipcindyipm, secret]
+                BucketName: !Sub "lly-edp-raw-${AWS::Region}-${pEnv}"
+                ServiceAccessRoleArn: !Ref IamRoleDmsRoleArn
+            ExtraConnectionAttributes: "dataFormat=parquet;timestampColumnName=R_CDC_TMSTMP;DatePartitionEnabled=true;DatePartitionSequence=YYYYMMDD;DatePartitionDelimiter=DASH;parquetTimestampInMillisecond=true;csvNullValue='';cdcMaxBatchInterval=120;maxFileSize=262144"
+            Tags:
+              - Key : "AppName"
+                Value: !Ref AppName
+              - Key : "Hipaa"
+                Value : !Ref Hipaa
+              - Key : "CostCenterApprover"
+                Value : !Ref CostCenterApprover
+              - Key : "PrimaryITContact"
+                Value : !Ref PrimaryItContact
+              - Key : "SystemOwner"
+                Value : !Ref SystemOwner
+              - Key : "SystemCustodian"
+                Value : !Ref SystemCustodian
+              - Key : "CostCenter"
+                Value : !Ref CostCenter
+              - Key : "Level1BusinessArea"
+                Value : !Ref Level1BusinessArea
+              - Key : "DataClassification"
+                Value : !Ref DataClassification
+              - Key : "Environment"
+                Value : !Ref DeployEnvironment
+              - Key : "SourceGitRepo"
+                Value : !Ref SourceGitRepo
+              - Key : "ApproverGroup"
+                Value: !Ref ApproverGroup
+              - Key : "ApplicationCi"
+                Value : !Ref ApplicationCi
+
+    rEdbMqDiaDmsTargetEndpointGIPCIndyIpmView:
+        DependsOn:
+          - rEdbMqDiaSecretManagerDmsSourceGIPCIndyIpm
+        Type: AWS::DMS::Endpoint
+        Condition: deployDev
+        Properties:
+            EndpointIdentifier: !FindInMap [system, gipcindyipm , dmsTargetEndpointView]
+            EndpointType: target
+            EngineName: s3
+            S3Settings:
+                BucketFolder: !Sub
+                  - "global_ipc_book/dms/gipc_{{resolve:secretsmanager:${hostname}:SecretString:host}}"
+                  - hostname: !FindInMap [system, gipcindyipm, secret]
+                BucketName: !Sub "lly-edp-raw-${AWS::Region}-${pEnv}"
+                ServiceAccessRoleArn: !Ref IamRoleDmsRoleArn
+            ExtraConnectionAttributes: "dataFormat=parquet;timestampColumnName=R_CDC_TMSTMP;parquetTimestampInMillisecond=true;csvNullValue='';maxFileSize=262144"
+            Tags:
+              - Key : "AppName"
+                Value: !Ref AppName
+              - Key : "Hipaa"
+                Value : !Ref Hipaa
+              - Key : "CostCenterApprover"
+                Value : !Ref CostCenterApprover
+              - Key : "PrimaryITContact"
+                Value : !Ref PrimaryItContact
+              - Key : "SystemOwner"
+                Value : !Ref SystemOwner
+              - Key : "SystemCustodian"
+                Value : !Ref SystemCustodian
+              - Key : "CostCenter"
+                Value : !Ref CostCenter
+              - Key : "Level1BusinessArea"
+                Value : !Ref Level1BusinessArea
+              - Key : "DataClassification"
+                Value : !Ref DataClassification
+              - Key : "Environment"
+                Value : !Ref DeployEnvironment
+              - Key : "SourceGitRepo"
+                Value : !Ref SourceGitRepo
+              - Key : "ApproverGroup"
+                Value: !Ref ApproverGroup
+              - Key : "ApplicationCi"
+                Value : !Ref ApplicationCi
+
+    rEdbMqDiaDmsSourceEndpointGIPCIndyIpm:
+        DependsOn:
+          - rEdbMqDiaSecretManagerDmsSourceGIPCIndyIpm
+        Type: "AWS::DMS::Endpoint"
+        Condition: deployDev
+        Properties:
+            EndpointIdentifier: !FindInMap [system, gipcindyipm, dmsSourceEndpoint]
+            EndpointType: source
+            EngineName: !Sub
+                - "{{resolve:secretsmanager:${segreto}:SecretString:engine}}"
+                - segreto: !FindInMap [system, gipcindyipm, secret]
+            DatabaseName: !Sub
+                - "{{resolve:secretsmanager:${segreto}:SecretString:dbname}}"
+                - segreto: !FindInMap [system, gipcindyipm, secret]
+            Password: !Sub
+                - "{{resolve:secretsmanager:${segreto}:SecretString:password}}"
+                - segreto: !FindInMap [system, gipcindyipm, secret]
+            Port: !Sub
+                - "{{resolve:secretsmanager:${segreto}:SecretString:port}}"
+                - segreto: !FindInMap [system, gipcindyipm, secret]
+            ServerName: !Sub
+                - "{{resolve:secretsmanager:${segreto}:SecretString:host}}"
+                - segreto: !FindInMap [system, gipcindyipm, secret]
+            Username: !Sub
+                - "{{resolve:secretsmanager:${segreto}:SecretString:username}}"
+                - segreto: !FindInMap [system, gipcindyipm, secret]
+            SslMode: none
+            # CertificateArn: !Sub
+            #    - "{{resolve:secretsmanager:${segreto}:SecretString:certificate}}"
+            #    - segreto: !FindInMap [system, gipcindyipm, secret]
+            ExtraConnectionAttributes: "numberDataTypeScale=-1;retryInterval=60;exposeViews=true"
+            Tags:
+              - Key : "AppName"
+                Value: !Ref AppName
+              - Key : "Hipaa"
+                Value : !Ref Hipaa
+              - Key : "CostCenterApprover"
+                Value : !Ref CostCenterApprover
+              - Key : "PrimaryITContact"
+                Value : !Ref PrimaryItContact
+              - Key : "SystemOwner"
+                Value : !Ref SystemOwner
+              - Key : "SystemCustodian"
+                Value : !Ref SystemCustodian
+              - Key : "CostCenter"
+                Value : !Ref CostCenter
+              - Key : "Level1BusinessArea"
+                Value : !Ref Level1BusinessArea
+              - Key : "DataClassification"
+                Value : !Ref DataClassification
+              - Key : "Environment"
+                Value : !Ref DeployEnvironment
+              - Key : "SourceGitRepo"
+                Value : !Ref SourceGitRepo
+              - Key : "ApproverGroup"
+                Value: !Ref ApproverGroup
+              - Key : "ApplicationCi"
+                Value : !Ref ApplicationCi
+
+    rEdbMqDiaDmsTargetEndpointGIPCSuzhou:
+        DependsOn:
+          - rEdbMqDiaSecretManagerDmsSourceGIPCSuzhou
+        Type: AWS::DMS::Endpoint
+        Condition: deployDev
+        Properties:
+            EndpointIdentifier: !FindInMap [system, gipcsuzhou, dmsTargetEndpoint]
+            EndpointType: target
+            EngineName: s3
+            S3Settings:
+                BucketFolder: !Sub
+                  - "global_ipc_book/dms/{{resolve:secretsmanager:${hostname}:SecretString:host}}"
+                  - hostname: !FindInMap [system, gipcsuzhou, secret]
+                BucketName: !Sub "lly-edp-raw-${AWS::Region}-${pEnv}"
+                ServiceAccessRoleArn: !Ref IamRoleDmsRoleArn
+            ExtraConnectionAttributes: "dataFormat=parquet;timestampColumnName=R_CDC_TMSTMP;DatePartitionEnabled=true;DatePartitionSequence=YYYYMMDD;DatePartitionDelimiter=DASH;parquetTimestampInMillisecond=true;csvNullValue='';cdcMaxBatchInterval=120;maxFileSize=262144"
+            Tags:
+              - Key : "AppName"
+                Value: !Ref AppName
+              - Key : "Hipaa"
+                Value : !Ref Hipaa
+              - Key : "CostCenterApprover"
+                Value : !Ref CostCenterApprover
+              - Key : "PrimaryITContact"
+                Value : !Ref PrimaryItContact
+              - Key : "SystemOwner"
+                Value : !Ref SystemOwner
+              - Key : "SystemCustodian"
+                Value : !Ref SystemCustodian
+              - Key : "CostCenter"
+                Value : !Ref CostCenter
+              - Key : "Level1BusinessArea"
+                Value : !Ref Level1BusinessArea
+              - Key : "DataClassification"
+                Value : !Ref DataClassification
+              - Key : "Environment"
+                Value : !Ref DeployEnvironment
+              - Key : "SourceGitRepo"
+                Value : !Ref SourceGitRepo
+              - Key : "ApproverGroup"
+                Value: !Ref ApproverGroup
+              - Key : "ApplicationCi"
+                Value : !Ref ApplicationCi
+
+    rEdbMqDiaDmsTargetEndpointGIPCSuzhouView:
+        DependsOn:
+          - rEdbMqDiaSecretManagerDmsSourceGIPCSuzhou
+        Type: AWS::DMS::Endpoint
+        Condition: deployDev
+        Properties:
+            EndpointIdentifier: !FindInMap [system, gipcsuzhou , dmsTargetEndpointView]
+            EndpointType: target
+            EngineName: s3
+            S3Settings:
+                BucketFolder: !Sub
+                  - "global_ipc_book/dms/gipc_{{resolve:secretsmanager:${hostname}:SecretString:host}}"
+                  - hostname: !FindInMap [system, gipcsuzhou, secret]
+                BucketName: !Sub "lly-edp-raw-${AWS::Region}-${pEnv}"
+                ServiceAccessRoleArn: !Ref IamRoleDmsRoleArn
+            ExtraConnectionAttributes: "dataFormat=parquet;timestampColumnName=R_CDC_TMSTMP;parquetTimestampInMillisecond=true;csvNullValue='';maxFileSize=262144"
+            Tags:
+              - Key : "AppName"
+                Value: !Ref AppName
+              - Key : "Hipaa"
+                Value : !Ref Hipaa
+              - Key : "CostCenterApprover"
+                Value : !Ref CostCenterApprover
+              - Key : "PrimaryITContact"
+                Value : !Ref PrimaryItContact
+              - Key : "SystemOwner"
+                Value : !Ref SystemOwner
+              - Key : "SystemCustodian"
+                Value : !Ref SystemCustodian
+              - Key : "CostCenter"
+                Value : !Ref CostCenter
+              - Key : "Level1BusinessArea"
+                Value : !Ref Level1BusinessArea
+              - Key : "DataClassification"
+                Value : !Ref DataClassification
+              - Key : "Environment"
+                Value : !Ref DeployEnvironment
+              - Key : "SourceGitRepo"
+                Value : !Ref SourceGitRepo
+              - Key : "ApproverGroup"
+                Value: !Ref ApproverGroup
+              - Key : "ApplicationCi"
+                Value : !Ref ApplicationCi
+
+    rEdbMqDiaDmsSourceEndpointGIPCSuzhou:
+        DependsOn:
+          - rEdbMqDiaSecretManagerDmsSourceGIPCSuzhou
+        Type: "AWS::DMS::Endpoint"
+        Condition: deployDev
+        Properties:
+            EndpointIdentifier: !FindInMap [system, gipcsuzhou, dmsSourceEndpoint]
+            EndpointType: source
+            EngineName: !Sub
+                - "{{resolve:secretsmanager:${segreto}:SecretString:engine}}"
+                - segreto: !FindInMap [system, gipcsuzhou, secret]
+            DatabaseName: !Sub
+                - "{{resolve:secretsmanager:${segreto}:SecretString:dbname}}"
+                - segreto: !FindInMap [system, gipcsuzhou, secret]
+            Password: !Sub
+                - "{{resolve:secretsmanager:${segreto}:SecretString:password}}"
+                - segreto: !FindInMap [system, gipcsuzhou, secret]
+            Port: !Sub
+                - "{{resolve:secretsmanager:${segreto}:SecretString:port}}"
+                - segreto: !FindInMap [system, gipcsuzhou, secret]
+            ServerName: !Sub
+                - "{{resolve:secretsmanager:${segreto}:SecretString:host}}"
+                - segreto: !FindInMap [system, gipcsuzhou, secret]
+            Username: !Sub
+                - "{{resolve:secretsmanager:${segreto}:SecretString:username}}"
+                - segreto: !FindInMap [system, gipcsuzhou, secret]
+            SslMode: none
+            # CertificateArn: !Sub
+            #    - "{{resolve:secretsmanager:${segreto}:SecretString:certificate}}"
+            #    - segreto: !FindInMap [system, gipcsuzhou, secret]
+            ExtraConnectionAttributes: "numberDataTypeScale=-1;retryInterval=60;exposeViews=true"
+            Tags:
+              - Key : "AppName"
+                Value: !Ref AppName
+              - Key : "Hipaa"
+                Value : !Ref Hipaa
+              - Key : "CostCenterApprover"
+                Value : !Ref CostCenterApprover
+              - Key : "PrimaryITContact"
+                Value : !Ref PrimaryItContact
+              - Key : "SystemOwner"
+                Value : !Ref SystemOwner
+              - Key : "SystemCustodian"
+                Value : !Ref SystemCustodian
+              - Key : "CostCenter"
+                Value : !Ref CostCenter
+              - Key : "Level1BusinessArea"
+                Value : !Ref Level1BusinessArea
+              - Key : "DataClassification"
+                Value : !Ref DataClassification
+              - Key : "Environment"
+                Value : !Ref DeployEnvironment
+              - Key : "SourceGitRepo"
+                Value : !Ref SourceGitRepo
+              - Key : "ApproverGroup"
+                Value: !Ref ApproverGroup
+              - Key : "ApplicationCi"
+                Value : !Ref ApplicationCi
+
+#############################EVENT BRIDGE TRIGGER#################################################
+    rEdbMqDiaEventRuleLambdaMoveDMSFileToRawZoneFormattedGIPC:
+        Type: AWS::Events::Rule
+        Condition: deployDev
+        Properties:
+            Description: "Trigger the Lambda MoveDMSFileToRawZoneFormatted on GIPC data"
+            State: "ENABLED"
+            EventPattern:
+                source:
+                    - "aws.s3"
+                detail-type:
+                    - AWS API Call via CloudTrail
+                detail:
+                    eventSource:
+                        - s3.amazonaws.com
+                    eventName:
+                        - PutObject
+                        - CopyObject
+                        - CompleteMultipartUpload
+                    requestParameters:
+                        bucketName:
+                          - !Sub "lly-edp-raw-${AWS::Region}-${pEnv}"
+                        key:
+                          - prefix: global_ipc_book/dms/
+            Targets:
+                - Arn: !Ref LambdaMoveDMSFileToRawZoneFormattedArn
+                  Id: eventConsumerLambdaMoveDMSFileToRawZoneFormattedGIPC
+                  InputPath: "$.detail.requestParameters"
+
+    rEdbMqDiaEventRuleLambdaPermissionMoveDMSFileToRawZoneFormattedGIPC:
+        Type: AWS::Lambda::Permission
+        Condition: deployDev
+        Properties:
+            FunctionName: !Ref LambdaMoveDMSFileToRawZoneFormattedName
+            Action: lambda:InvokeFunction
+            Principal: "events.amazonaws.com"
+            SourceArn: !GetAtt rEdbMqDiaEventRuleLambdaMoveDMSFileToRawZoneFormattedGIPC.Arn
+
+############################################################################
+
+Outputs:
+    outputDmsTargetEndpointGIPCSesto:
+        Description: Target Endpoint for GIPC Sesto
+        Condition: deployDev
+        Value: !Ref rEdbMqDiaDmsTargetEndpointGIPCSesto
+        Export:
+          Name: expEdbMqDiaDmsTargetEndpointGIPCSesto
+    outputDmsTargetEndpointGIPCSestoView:
+        Description: Target Endpoint for GIPC Sesto for View
+        Condition: deployDev
+        Value: !Ref rEdbMqDiaDmsTargetEndpointGIPCSestoView
+        Export:
+          Name: expEdbMqDiaDmsTargetEndpointGIPCSestoView
+    outputDmsSourceEndpointGIPCSesto:
+        Description: Source Endpoint for GIPC Sesto
+        Condition: deployDev
+        Value: !Ref rEdbMqDiaDmsSourceEndpointGIPCSesto
+        Export:
+          Name: expEdbMqDiaDmsSourceEndpointGIPCSesto
+    outputDmsTargetEndpointGIPCFegersheim:
+        Description: Target Endpoint for GIPC Fegersheim
+        Condition: deployDev
+        Value: !Ref rEdbMqDiaDmsTargetEndpointGIPCFegersheim
+        Export:
+          Name: expEdbMqDiaDmsTargetEndpointGIPCFegersheim
+    outputDmsTargetEndpointGIPCFegersheimView:
+        Description: Target Endpoint for GIPC Fegersheim for View
+        Condition: deployDev
+        Value: !Ref rEdbMqDiaDmsTargetEndpointGIPCFegersheimView
+        Export:
+          Name: expEdbMqDiaDmsTargetEndpointGIPCFegersheimView
+    outputDmsSourceEndpointGIPCFegersheim:
+        Description: Source Endpoint for GIPC Fegersheim
+        Condition: deployDev
+        Value: !Ref rEdbMqDiaDmsSourceEndpointGIPCFegersheim
+        Export:
+          Name: expEdbMqDiaDmsSourceEndpointGIPCFegersheim
+    outputDmsTargetEndpointGIPCIndyIpm:
+        Description: Target Endpoint for GIPC IndyIpm
+        Condition: deployDev
+        Value: !Ref rEdbMqDiaDmsTargetEndpointGIPCIndyIpm
+        Export:
+          Name: expEdbMqDiaDmsTargetEndpointGIPCIndyIpm
+    outputDmsTargetEndpointGIPCIndyIpmView:
+        Description: Target Endpoint for GIPC IndyIpm for View
+        Condition: deployDev
+        Value: !Ref rEdbMqDiaDmsTargetEndpointGIPCIndyIpmView
+        Export:
+          Name: expEdbMqDiaDmsTargetEndpointGIPCIndyIpmView
+    outputDmsSourceEndpointGIPCIndyIpm:
+        Description: Source Endpoint for GIPC IndyIpm
+        Condition: deployDev
+        Value: !Ref rEdbMqDiaDmsSourceEndpointGIPCIndyIpm
+        Export:
+          Name: expEdbMqDiaDmsSourceEndpointGIPCIndyIpm
+    outputDmsTargetEndpointGIPCSuzhou:
+        Description: Target Endpoint for GIPC Suzhou
+        Condition: deployDev
+        Value: !Ref rEdbMqDiaDmsTargetEndpointGIPCSuzhou
+        Export:
+          Name: expEdbMqDiaDmsTargetEndpointGIPCSuzhou
+    outputDmsTargetEndpointGIPCSuzhouView:
+        Description: Target Endpoint for GIPC Suzhou for View
+        Condition: deployDev
+        Value: !Ref rEdbMqDiaDmsTargetEndpointGIPCSuzhouView
+        Export:
+          Name: expEdbMqDiaDmsTargetEndpointGIPCSuzhouView
+    outputDmsSourceEndpointGIPCSuzhou:
+        Description: Source Endpoint for GIPC Suzhou
+        Condition: deployDev
+        Value: !Ref rEdbMqDiaDmsSourceEndpointGIPCSuzhou
+        Export:
+          Name: expEdbMqDiaDmsSourceEndpointGIPCSuzhou
+    outputDmsEventBridgeLambdaGIPC:
+        Description: Trigger for the Lambda MoveToRaw for GIPC
+        Condition: deployDev
+        Value: !GetAtt rEdbMqDiaEventRuleLambdaMoveDMSFileToRawZoneFormattedGIPC.Arn
+        Export:
+          Name: expEventBridgeTriggerGIPCArn

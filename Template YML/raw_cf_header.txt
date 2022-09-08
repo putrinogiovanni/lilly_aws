@@ -1,0 +1,34 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform:  'AWS::Serverless-2016-10-31'
+
+Description: Integration of M&Q sources in EDB to create Raw Tables in the Glue Catalog
+        
+Parameters:
+    pEnv:
+        Description: Environment
+        Type: String
+        Default: dev
+        ConstraintDescription: must specify dev, qa or prod.
+        AllowedValues:
+        - dev
+        - qa
+        - prod
+    pGlueDatabaseNameRaw:
+        Type: String
+        Description: "Name of the Glue Database"
+    <<chiave>>:
+        Type: String
+        Description: "Key name in S3 bucket"
+
+
+Conditions:
+  deployDev:
+    !Equals [!Ref pEnv, dev]
+  deployQA:
+    !Or [!Equals [!Ref pEnv, dev], !Equals [!Ref pEnv, qa]]
+  deployProd:
+    !Or [!Equals [!Ref pEnv, dev], !Equals [!Ref pEnv, qa], !Equals [!Ref pEnv, prod]]
+
+
+
+Resources:

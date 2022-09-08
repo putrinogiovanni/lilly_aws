@@ -1,0 +1,102 @@
+    rEdbMqDiaDmsTargetEndpoint<<system>><<site>>:
+        DependsOn:
+          - rEdbMqDiaSecretManagerDmsSource<<system>><<site>>
+        Type: AWS::DMS::Endpoint
+        Condition: deployDev
+        Properties:
+            EndpointIdentifier: !FindInMap [system, <<system_l>><<site_l>>, dmsTargetEndpoint]
+            EndpointType: target
+            EngineName: s3
+            S3Settings:
+                BucketFolder: !Sub
+                  - "<<key>>/dms/{{resolve:secretsmanager:${hostname}:SecretString:host}}"
+                  - hostname: !FindInMap [system, <<system_l>><<site_l>>, secret]
+                BucketName: !Sub "lly-edp-raw-${AWS::Region}-${pEnv}"
+                ServiceAccessRoleArn: !Ref IamRoleDmsRoleArn
+            ExtraConnectionAttributes: "dataFormat=parquet;timestampColumnName=R_CDC_TMSTMP;DatePartitionEnabled=true;DatePartitionSequence=YYYYMMDD;DatePartitionDelimiter=DASH;parquetTimestampInMillisecond=true;csvNullValue='';cdcMaxBatchInterval=120;maxFileSize=262144"
+            Tags:
+              - Key : "AppName"
+                Value: !Ref AppName
+              - Key : "Hipaa"
+                Value : !Ref Hipaa
+              - Key : "CostCenterApprover"
+                Value : !Ref CostCenterApprover
+              - Key : "PrimaryITContact"
+                Value : !Ref PrimaryItContact
+              - Key : "SystemOwner"
+                Value : !Ref SystemOwner
+              - Key : "SystemCustodian"
+                Value : !Ref SystemCustodian
+              - Key : "CostCenter"
+                Value : !Ref CostCenter
+              - Key : "Level1BusinessArea"
+                Value : !Ref Level1BusinessArea
+              - Key : "DataClassification"
+                Value : !Ref DataClassification
+              - Key : "Environment"
+                Value : !Ref DeployEnvironment
+              - Key : "SourceGitRepo"
+                Value : !Ref SourceGitRepo
+              - Key : "ApproverGroup"
+                Value: !Ref ApproverGroup
+              - Key : "ApplicationCi"
+                Value : !Ref ApplicationCi
+
+    rEdbMqDiaDmsSourceEndpoint<<system>><<site>>:
+        DependsOn:
+          - rEdbMqDiaSecretManagerDmsSource<<system>><<site>>
+        Type: "AWS::DMS::Endpoint"
+        Condition: deployDev
+        Properties:
+            EndpointIdentifier: !FindInMap [system, <<system_l>><<site_l>>, dmsSourceEndpoint]
+            EndpointType: source
+            EngineName: !Sub
+                - "{{resolve:secretsmanager:${segreto}:SecretString:engine}}"
+                - segreto: !FindInMap [system, <<system_l>><<site_l>>, secret]
+            DatabaseName: !Sub
+                - "{{resolve:secretsmanager:${segreto}:SecretString:dbname}}"
+                - segreto: !FindInMap [system, <<system_l>><<site_l>>, secret]
+            Password: !Sub
+                - "{{resolve:secretsmanager:${segreto}:SecretString:password}}"
+                - segreto: !FindInMap [system, <<system_l>><<site_l>>, secret]
+            Port: !Sub
+                - "{{resolve:secretsmanager:${segreto}:SecretString:port}}"
+                - segreto: !FindInMap [system, <<system_l>><<site_l>>, secret]
+            ServerName: !Sub
+                - "{{resolve:secretsmanager:${segreto}:SecretString:host}}"
+                - segreto: !FindInMap [system, <<system_l>><<site_l>>, secret]
+            Username: !Sub
+                - "{{resolve:secretsmanager:${segreto}:SecretString:username}}"
+                - segreto: !FindInMap [system, <<system_l>><<site_l>>, secret]
+            SslMode: none
+            # CertificateArn: !Sub
+            #    - "{{resolve:secretsmanager:${segreto}:SecretString:certificate}}"
+            #    - segreto: !FindInMap [system, <<system_l>><<site_l>>, secret]
+            ExtraConnectionAttributes: "numberDataTypeScale=-1;retryInterval=60;exposeViews=true"
+            Tags:
+              - Key : "AppName"
+                Value: !Ref AppName
+              - Key : "Hipaa"
+                Value : !Ref Hipaa
+              - Key : "CostCenterApprover"
+                Value : !Ref CostCenterApprover
+              - Key : "PrimaryITContact"
+                Value : !Ref PrimaryItContact
+              - Key : "SystemOwner"
+                Value : !Ref SystemOwner
+              - Key : "SystemCustodian"
+                Value : !Ref SystemCustodian
+              - Key : "CostCenter"
+                Value : !Ref CostCenter
+              - Key : "Level1BusinessArea"
+                Value : !Ref Level1BusinessArea
+              - Key : "DataClassification"
+                Value : !Ref DataClassification
+              - Key : "Environment"
+                Value : !Ref DeployEnvironment
+              - Key : "SourceGitRepo"
+                Value : !Ref SourceGitRepo
+              - Key : "ApproverGroup"
+                Value: !Ref ApproverGroup
+              - Key : "ApplicationCi"
+                Value : !Ref ApplicationCi

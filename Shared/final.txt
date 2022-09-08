@@ -1,0 +1,6 @@
+    outputDmsEventBridgeLambda<<system>>:
+        Description: Trigger for the Lambda MoveToRaw for <<system>>
+        Condition: deployDev
+        Value: !GetAtt rEdbMqDiaEventRuleLambdaMoveDMSFileToRawZoneFormatted<<system>>.Arn
+        Export:
+          Name: expEventBridgeTrigger<<system>>Arn

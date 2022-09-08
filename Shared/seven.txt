@@ -1,0 +1,12 @@
+    outputDmsTargetEndpoint<<system>><<site>>:
+        Description: Target Endpoint for <<system>> <<site>>
+        Condition: deployDev
+        Value: !Ref rEdbMqDiaDmsTargetEndpoint<<system>><<site>>
+        Export:
+          Name: expEdbMqDiaDmsTargetEndpoint<<system>><<site>>
+    outputDmsSourceEndpoint<<system>><<site>>:
+        Description: Source Endpoint for <<system>> <<site>>
+        Condition: deployDev
+        Value: !Ref rEdbMqDiaDmsSourceEndpoint<<system>><<site>>
+        Export:
+          Name: expEdbMqDiaDmsSourceEndpoint<<system>><<site>>

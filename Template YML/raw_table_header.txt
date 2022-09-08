@@ -1,0 +1,25 @@
+
+  rEdbMqDiaGlueTable<<SYSTEM_PREFIX_U>><<TABLE_NAME_NU>>:
+    Type: AWS::Glue::Table
+    Condition: deployDev
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseName: !Ref pGlueDatabaseNameRaw
+      TableInput:
+        Description: Table <<TABLE_NAME>> imported manually
+        Name: raw_<<SYSTEM_PREFIX_L>>_<<TABLE_NAME_LC>>
+        StorageDescriptor:
+          InputFormat: org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat
+          OutputFormat: org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat
+          Location: !Sub "s3://lly-edp-raw-${AWS::Region}-${pEnv}/<<system_prefix_U_location>>/raw/<<TABLE_NAME>>/"
+          SerdeInfo:
+            Parameters: {"serialization.format": "1"}
+            SerializationLibrary: org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe
+          StoredAsSubDirectories: false
+          Columns:
+              - Name: ROW_NUM
+                Type: bigint
+              - Name: OP
+                Type: string
+              - Name: R_CDC_TMSTMP
+                Type: string

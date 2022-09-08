@@ -1,0 +1,258 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform:  'AWS::Serverless-2016-10-31'
+
+
+Description: Integration of M&Q sources in EDB to create All Shared Resources needed for DARWIN integration
+
+Parameters:
+    pEnv:
+        Description: Environment
+        Type: String
+        Default: dev
+        ConstraintDescription: must specify dev, qa or prod.
+        AllowedValues:
+        - dev
+        - qa
+        - prod
+    AppName:
+        Description: "Enter AppName"
+        Type: String
+    Hipaa:
+        Description: "Enter Hipaa"
+        Type: String
+    CostCenterApprover :
+        Description: "Enter CostCenterApprover"
+        Type: String
+    PrimaryItContact :
+        Description: "Enter PrimaryItContact"
+        Type: String
+    SystemOwner :
+        Description: "Enter SystemOwner"
+        Type: String
+    SystemCustodian :
+        Description: "Enter SystemCustodian"
+        Type: String
+    CostCenter :
+        Description: "EnterCostCenter"
+        Type: String
+    Level1BusinessArea :
+        Description: "Enter Level1BusinessArea"
+        Type: String
+    DataClassification :
+        Description: "Enter DataClassification"
+        Type: String
+    DeployEnvironment :
+        Description: "Enter DeployEnvironment"
+        Type: String
+    SourceGitRepo:
+        Description: "Enter Source Git Repository Name"
+        Type: String
+    ApproverGroup:
+        Description: "Enter the Approver Group"
+        Type: String
+    ApplicationCi:
+        Description: "Enter the Application Ci parameter"
+        Type: String
+    IamRoleDmsRoleArn:
+        Description: Iam Role ARN for the DMS Service Role used by CAVEAU project
+        Type: String
+    KMSencryptionSecretManagerKeyArn:
+        Description: "key to encrypt the SecretManager for CAVEAU MQ project"
+        Type: String
+    LambdaMoveDMSFileToRawZoneFormattedName:
+        Description: Lambda name of function to move data from Landing to Raw zone
+        Type: String
+    LambdaMoveDMSFileToRawZoneFormattedArn:
+        Description: Lambda ARN of function to move data from Landing to Raw zone
+        Type: String
+
+
+Conditions:
+  deployDev:
+    !Equals [!Ref pEnv, dev]
+  deployQA:
+    !Or [!Equals [!Ref pEnv, dev], !Equals [!Ref pEnv, qa]]
+  deployProd:
+    !Or [!Equals [!Ref pEnv, dev], !Equals [!Ref pEnv, qa], !Equals [!Ref pEnv, prod]]
+
+
+Mappings:
+  system:
+    darwinsuzhou:
+      "secret": "edb-mq-dia-secret-darwinsuzhou"
+      "dmsTargetEndpoint": "edb-mq-dia-darwin-suzhou-target"
+      "dmsSourceEndpoint": "edb-mq-dia-darwin-suzhou-source"
+#############################SECRET MANAGER GROUPS#################################################
+    rEdbMqDiaSecretManagerDmsSourceDARWINSuzhou:
+        Type: AWS::SecretsManager::Secret
+        Condition: deployDev
+        Properties:
+            Name: !FindInMap [system, darwinsuzhou, secret]
+            Description: Secret for DARWIN Suzhou source Endpoint of DMS for the CAVEAU project
+            KmsKeyId: !Ref KMSencryptionSecretManagerKeyArn
+            SecretString:
+                "{\"username\":\"userTest\",\"password\":\"pwdTest\",\"engine\":\"oracle\",\"host\":\"hostTest\",\"port\":1,\"dbname\":\"dbTest\",\"certificate\":\"certTest\"}"
+
+#############################DMS#################################################
+    rEdbMqDiaDmsTargetEndpointDARWINSuzhou:
+        DependsOn:
+          - rEdbMqDiaSecretManagerDmsSourceDARWINSuzhou
+        Type: AWS::DMS::Endpoint
+        Condition: deployDev
+        Properties:
+            EndpointIdentifier: !FindInMap [system, darwinsuzhou, dmsTargetEndpoint]
+            EndpointType: target
+            EngineName: s3
+            S3Settings:
+                BucketFolder: !Sub
+                  - "darwin_laboratory_system/dms/{{resolve:secretsmanager:${hostname}:SecretString:host}}"
+                  - hostname: !FindInMap [system, darwinsuzhou, secret]
+                BucketName: !Sub "lly-edp-raw-${AWS::Region}-${pEnv}"
+                ServiceAccessRoleArn: !Ref IamRoleDmsRoleArn
+            ExtraConnectionAttributes: "dataFormat=parquet;timestampColumnName=R_CDC_TMSTMP;DatePartitionEnabled=true;DatePartitionSequence=YYYYMMDD;DatePartitionDelimiter=DASH;parquetTimestampInMillisecond=true;csvNullValue='';cdcMaxBatchInterval=120;maxFileSize=262144"
+            Tags:
+              - Key : "AppName"
+                Value: !Ref AppName
+              - Key : "Hipaa"
+                Value : !Ref Hipaa
+              - Key : "CostCenterApprover"
+                Value : !Ref CostCenterApprover
+              - Key : "PrimaryITContact"
+                Value : !Ref PrimaryItContact
+              - Key : "SystemOwner"
+                Value : !Ref SystemOwner
+              - Key : "SystemCustodian"
+                Value : !Ref SystemCustodian
+              - Key : "CostCenter"
+                Value : !Ref CostCenter
+              - Key : "Level1BusinessArea"
+                Value : !Ref Level1BusinessArea
+              - Key : "DataClassification"
+                Value : !Ref DataClassification
+              - Key : "Environment"
+                Value : !Ref DeployEnvironment
+              - Key : "SourceGitRepo"
+                Value : !Ref SourceGitRepo
+              - Key : "ApproverGroup"
+                Value: !Ref ApproverGroup
+              - Key : "ApplicationCi"
+                Value : !Ref ApplicationCi
+
+    rEdbMqDiaDmsSourceEndpointDARWINSuzhou:
+        DependsOn:
+          - rEdbMqDiaSecretManagerDmsSourceDARWINSuzhou
+        Type: "AWS::DMS::Endpoint"
+        Condition: deployDev
+        Properties:
+            EndpointIdentifier: !FindInMap [system, darwinsuzhou, dmsSourceEndpoint]
+            EndpointType: source
+            EngineName: !Sub
+                - "{{resolve:secretsmanager:${segreto}:SecretString:engine}}"
+                - segreto: !FindInMap [system, darwinsuzhou, secret]
+            DatabaseName: !Sub
+                - "{{resolve:secretsmanager:${segreto}:SecretString:dbname}}"
+                - segreto: !FindInMap [system, darwinsuzhou, secret]
+            Password: !Sub
+                - "{{resolve:secretsmanager:${segreto}:SecretString:password}}"
+                - segreto: !FindInMap [system, darwinsuzhou, secret]
+            Port: !Sub
+                - "{{resolve:secretsmanager:${segreto}:SecretString:port}}"
+                - segreto: !FindInMap [system, darwinsuzhou, secret]
+            ServerName: !Sub
+                - "{{resolve:secretsmanager:${segreto}:SecretString:host}}"
+                - segreto: !FindInMap [system, darwinsuzhou, secret]
+            Username: !Sub
+                - "{{resolve:secretsmanager:${segreto}:SecretString:username}}"
+                - segreto: !FindInMap [system, darwinsuzhou, secret]
+            SslMode: none
+            # CertificateArn: !Sub
+            #    - "{{resolve:secretsmanager:${segreto}:SecretString:certificate}}"
+            #    - segreto: !FindInMap [system, darwinsuzhou, secret]
+            ExtraConnectionAttributes: "numberDataTypeScale=-1;retryInterval=60;exposeViews=true"
+            Tags:
+              - Key : "AppName"
+                Value: !Ref AppName
+              - Key : "Hipaa"
+                Value : !Ref Hipaa
+              - Key : "CostCenterApprover"
+                Value : !Ref CostCenterApprover
+              - Key : "PrimaryITContact"
+                Value : !Ref PrimaryItContact
+              - Key : "SystemOwner"
+                Value : !Ref SystemOwner
+              - Key : "SystemCustodian"
+                Value : !Ref SystemCustodian
+              - Key : "CostCenter"
+                Value : !Ref CostCenter
+              - Key : "Level1BusinessArea"
+                Value : !Ref Level1BusinessArea
+              - Key : "DataClassification"
+                Value : !Ref DataClassification
+              - Key : "Environment"
+                Value : !Ref DeployEnvironment
+              - Key : "SourceGitRepo"
+                Value : !Ref SourceGitRepo
+              - Key : "ApproverGroup"
+                Value: !Ref ApproverGroup
+              - Key : "ApplicationCi"
+                Value : !Ref ApplicationCi
+
+#############################EVENT BRIDGE TRIGGER#################################################
+    rEdbMqDiaEventRuleLambdaMoveDMSFileToRawZoneFormattedDARWIN:
+        Type: AWS::Events::Rule
+        Condition: deployDev
+        Properties:
+            Description: "Trigger the Lambda MoveDMSFileToRawZoneFormatted on DARWIN data"
+            State: "ENABLED"
+            EventPattern:
+                source:
+                    - "aws.s3"
+                detail-type:
+                    - AWS API Call via CloudTrail
+                detail:
+                    eventSource:
+                        - s3.amazonaws.com
+                    eventName:
+                        - PutObject
+                        - CopyObject
+                        - CompleteMultipartUpload
+                    requestParameters:
+                        bucketName:
+                          - !Sub "lly-edp-raw-${AWS::Region}-${pEnv}"
+                        key:
+                          - prefix: darwin_laboratory_system/dms/
+            Targets:
+                - Arn: !Ref LambdaMoveDMSFileToRawZoneFormattedArn
+                  Id: eventConsumerLambdaMoveDMSFileToRawZoneFormattedDARWIN
+                  InputPath: "$.detail.requestParameters"
+
+    rEdbMqDiaEventRuleLambdaPermissionMoveDMSFileToRawZoneFormattedDARWIN:
+        Type: AWS::Lambda::Permission
+        Condition: deployDev
+        Properties:
+            FunctionName: !Ref LambdaMoveDMSFileToRawZoneFormattedName
+            Action: lambda:InvokeFunction
+            Principal: "events.amazonaws.com"
+            SourceArn: !GetAtt rEdbMqDiaEventRuleLambdaMoveDMSFileToRawZoneFormattedDARWIN.Arn
+
+############################################################################
+
+Outputs:
+    outputDmsTargetEndpointDARWINSuzhou:
+        Description: Target Endpoint for DARWIN Suzhou
+        Condition: deployDev
+        Value: !Ref rEdbMqDiaDmsTargetEndpointDARWINSuzhou
+        Export:
+          Name: expEdbMqDiaDmsTargetEndpointDARWINSuzhou
+    outputDmsSourceEndpointGIPCSuzhou:
+        Description: Source Endpoint for DARWIN Suzhou
+        Condition: deployDev
+        Value: !Ref rEdbMqDiaDmsSourceEndpointDARWINSuzhou
+        Export:
+          Name: expEdbMqDiaDmsSourceEndpointDARWINSuzhou
+    outputDmsEventBridgeLambdaDARWIN:
+        Description: Trigger for the Lambda MoveToRaw for DARWIN
+        Condition: deployDev
+        Value: !GetAtt rEdbMqDiaEventRuleLambdaMoveDMSFileToRawZoneFormattedDARWIN.Arn
+        Export:
+          Name: expEventBridgeTriggerDARWINArn

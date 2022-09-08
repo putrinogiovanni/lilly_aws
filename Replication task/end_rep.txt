@@ -1,0 +1,27 @@
+        Tags:
+          - Key: "AppName"
+            Value: !Ref AppName
+          - Key: "Hipaa"
+            Value: !Ref Hipaa
+          - Key: "CostCenterApprover"
+            Value: !Ref CostCenterApprover
+          - Key : "PrimaryITContact"
+            Value : !Ref PrimaryItContact
+          - Key : "SystemOwner"
+            Value : !Ref SystemOwner
+          - Key : "SystemCustodian"
+            Value : !Ref SystemCustodian
+          - Key : "CostCenter"
+            Value : !Ref CostCenter
+          - Key : "Level1BusinessArea"
+            Value : !Ref Level1BusinessArea
+          - Key : "DataClassification"
+            Value : !Ref DataClassification
+          - Key : "DeployEnvironment"
+            Value : !Ref DeployEnvironment
+          - Key : "SourceGitRepo"
+            Value : !Ref SourceGitRepo
+          - Key : "ApproverGroup"
+            Value :  !Ref ApproverGroup
+          - Key : "ApplicationCi"
+            Value: !Ref ApplicationCi

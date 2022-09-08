@@ -1,0 +1,4 @@
+    <<system_l>><<site_l>>:
+      "secret": "edb-mq-dia-secret-<<system_l>><<site_l>>"
+      "dmsTargetEndpoint": "edb-mq-dia-<<system_l>>-<<site_l>>-target"
+      "dmsSourceEndpoint": "edb-mq-dia-<<system_l>>-<<site_l>>-source"

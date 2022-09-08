@@ -1,0 +1,26 @@
+  certdevprod:
+    dev:
+      "sslMode": "verify-ca"
+    qa:
+      "sslMode": "none"
+    prod:
+      "sslMode": "verify-ca"
+  certdev:
+    dev:
+      "sslMode": "verify-ca"
+    qa:
+      "sslMode": "none"
+    prod:
+      "sslMode": "none"
+  certdevqa:
+    dev:
+      "sslMode": "verify-ca"
+    qa:
+      "sslMode": "verify-ca"
+    prod:
+      "sslMode": "none"
+
+
+
+
+Resources:

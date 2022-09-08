@@ -1,0 +1,17 @@
+
+  rEdbMqDiaDmsReplicationTask<<system_UPPER>><<site>><<A>>:
+    Type: AWS::DMS::ReplicationTask
+    Condition: deployDev
+    Properties:
+        ReplicationInstanceArn: !ImportValue expEdbMqDiaDmsReplicationInstance
+        ReplicationTaskIdentifier: "edb-mq-dia-repl-task-<<system_prefix_l>>-<<site>>-<<A>>"
+        ReplicationTaskSettings: '{
+          "FullLoadSettings":{"MaxFullLoadSubTasks":49},
+          "Logging":{"EnableLogging":true},
+          "ChangeProcessingDdlHandlingPolicy":{"HandleSourceTableDropped": false,"HandleSourceTableTruncated": false,"HandleSourceTableAltered": true}
+        }'
+        SourceEndpointArn: !ImportValue expEdbMqDiaDmsSourceEndpoint<<system_name>><<site>>
+        TargetEndpointArn: !ImportValue expEdbMqDiaDmsTargetEndpoint<<system_name>><<site>>
+        MigrationType: full-load-and-cdc
+        TableMappings: '{"rules":
+          [

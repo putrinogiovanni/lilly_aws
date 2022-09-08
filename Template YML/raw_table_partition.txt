@@ -1,0 +1,7 @@
+        PartitionKeys:
+          - Name: R_CDC_DATE
+            Type: string
+          - Name: R_SRC_ID
+            Type: bigint 
+        TableType: EXTERNAL_TABLE
+        Parameters: {"classification":"parquet"}

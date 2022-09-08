@@ -1,0 +1,34 @@
+  rEdbMqDiaGlueTable<<SYSTEM_PREFIX_U>><<TABLE_NAME_NU>>:
+    Type: AWS::Glue::Table
+    Condition: deployDev
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseName: !Ref pGlueDatabaseNameRef
+      TableInput:
+        Description: Table <<TABLE_NAME>>  imported manually
+        Name: ref_<<SYSTEM_PREFIX_L>>_<<TABLE_NAME_LC>>
+        StorageDescriptor:
+          InputFormat: org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat
+          OutputFormat: org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat
+          Location: !Sub "s3://lly-edp-refined-us-east-2-${pEnv}/<<system_prefix_U_location>>/refine/<<TABLE_NAME>>/"
+          SerdeInfo:
+            Parameters: {"serialization.format": "1"}
+            SerializationLibrary: org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe
+          StoredAsSubDirectories: false
+          Columns:
+            - Name: R_RCRD_STS_CD
+              Type: string
+            - Name: R_INS_TMSTMP
+              Type: string
+            - Name: R_INS_LOAD_ID
+              Type: string
+            - Name: R_UPD_TMSTMP
+              Type: string
+            - Name: R_UPD_LOAD_ID
+              Type: string
+            - Name: R_DEL_TMSTMP
+              Type: string
+            - Name: R_DEL_LOAD_ID
+              Type: string
+            - Name: R_FCLTY_CD
+              Type: string

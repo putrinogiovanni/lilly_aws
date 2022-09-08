@@ -1,0 +1,36 @@
+    rEdbMqDiaEventRuleLambdaMoveDMSFileToRawZoneFormatted<<system>>:
+        Type: AWS::Events::Rule
+        Condition: deployDev
+        Properties:
+            Description: "Trigger the Lambda MoveDMSFileToRawZoneFormatted on <<system>> data"
+            State: "ENABLED"
+            EventPattern:
+                source:
+                    - "aws.s3"
+                detail-type:
+                    - AWS API Call via CloudTrail
+                detail:
+                    eventSource:
+                        - s3.amazonaws.com
+                    eventName:
+                        - PutObject
+                        - CopyObject
+                        - CompleteMultipartUpload
+                    requestParameters:
+                        bucketName:
+                          - !Sub "lly-edp-raw-${AWS::Region}-${pEnv}"
+                        key:
+                          - prefix: <<key>>/dms/
+            Targets:
+                - Arn: !Ref LambdaMoveDMSFileToRawZoneFormattedArn
+                  Id: eventConsumerLambdaMoveDMSFileToRawZoneFormatted<<system>>
+                  InputPath: "$.detail.requestParameters"
+
+    rEdbMqDiaEventRuleLambdaPermissionMoveDMSFileToRawZoneFormatted<<system>>:
+        Type: AWS::Lambda::Permission
+        Condition: deployDev
+        Properties:
+            FunctionName: !Ref LambdaMoveDMSFileToRawZoneFormattedName
+            Action: lambda:InvokeFunction
+            Principal: "events.amazonaws.com"
+            SourceArn: !GetAtt rEdbMqDiaEventRuleLambdaMoveDMSFileToRawZoneFormatted<<system>>.Arn

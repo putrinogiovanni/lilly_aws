@@ -1,0 +1,9 @@
+    rEdbMqDiaSecretManagerDmsSource<<system>><<site>>:
+        Type: AWS::SecretsManager::Secret
+        Condition: deployDev
+        Properties:
+            Name: !FindInMap [system, <<system_l>><<site_l>>, secret]
+            Description: Secret for <<system>> <<site>> source Endpoint of DMS for the CAVEAU project
+            KmsKeyId: !Ref KMSencryptionSecretManagerKeyArn
+            SecretString:
+                "{\"username\":\"userTest\",\"password\":\"pwdTest\",\"engine\":\"oracle\",\"host\":\"hostTest\",\"port\":1,\"dbname\":\"dbTest\",\"certificate\":\"certTest\"}"

@@ -1,0 +1,6 @@
+  outputEdbMqDiaDMSTaskFor<<system_UPPER>><<site>><<A>>:
+      Description: The tasks for <<system_UPPER>> <<site>>  of the DMS
+      Condition: deployDev
+      Value: !Ref rEdbMqDiaDmsReplicationTask<<system_UPPER>><<site>><<A>>
+      Export:
+        Name: expEdbMqDiaDMSTaskFor<<system_UPPER>><<site>><<A>>
